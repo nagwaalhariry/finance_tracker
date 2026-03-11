@@ -48,9 +48,9 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
 
     while (attempts < maxRetries) {
       try {
-        await _remoteDataSource.syncExpenses(unsynced);
-        await _localDataSource.markSynced(unsynced.map((e) => e.id).toList());
-        return unsynced.length;
+    await _remoteDataSource.syncExpenses(unsynced);
+    await _localDataSource.markSynced(unsynced.map((e) => e.id).toList());
+    return unsynced.length;
       } catch (_) {
         attempts++;
         if (attempts >= maxRetries) rethrow;

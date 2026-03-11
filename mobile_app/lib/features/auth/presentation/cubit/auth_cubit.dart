@@ -28,6 +28,7 @@ class AuthCubit extends Cubit<AuthState> {
       state.copyWith(
         status: AuthStatus.success,
         isAuthenticated: loggedIn,
+        requireBalanceSetup: false,
       ),
     );
   }
@@ -48,6 +49,7 @@ class AuthCubit extends Cubit<AuthState> {
           status: AuthStatus.success,
           isAuthenticated: true,
           entryMode: AuthEntryMode.register,
+          requireBalanceSetup: true,
         ),
       );
     } catch (e) {
@@ -77,6 +79,7 @@ class AuthCubit extends Cubit<AuthState> {
           status: AuthStatus.success,
           isAuthenticated: true,
           entryMode: AuthEntryMode.login,
+          requireBalanceSetup: false,
         ),
       );
     } catch (e) {
@@ -99,6 +102,7 @@ class AuthCubit extends Cubit<AuthState> {
         status: AuthStatus.success,
         isAuthenticated: false,
         entryMode: AuthEntryMode.login,
+        requireBalanceSetup: false,
       ),
     );
   }
@@ -113,6 +117,7 @@ class AuthCubit extends Cubit<AuthState> {
           status: AuthStatus.success,
           isAuthenticated: false,
           entryMode: AuthEntryMode.register,
+          requireBalanceSetup: false,
         ),
       );
     } catch (e) {

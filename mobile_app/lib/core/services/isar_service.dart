@@ -2,6 +2,7 @@ import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../features/expenses/data/models/expense_model.dart';
+import '../../features/fixed_expenses/data/models/fixed_expense_model.dart';
 
 class IsarService {
   Isar? _db;
@@ -23,12 +24,25 @@ class IsarService {
     }
 
     final dir = await getApplicationDocumentsDirectory();
-    _db = await Isar.open(
-      [ExpenseModelSchema],
-      directory: dir.path,
-      name: 'finance_tracker_$userId',
-    );
-    _activeUserId = userId;
+    try {
+      _db = await Isar.open(
+        [ExpenseModelSchema, FixedExpenseModelSchema],
+        directory: dir.path,
+        name: 'finance_tracker_$userId',
+        inspector: true,
+      );
+      _activeUserId = userId;
+    } on IsarError {
+      // Fallback to expense-only DB if fixed-expense generated schema is stale/invalid.
+      // Run build_runner locally to regenerate fixed_expense_model.g.dart and remove fallback usage.
+      _db = await Isar.open(
+        [ExpenseModelSchema],
+        directory: dir.path,
+        name: 'finance_tracker_$userId',
+        inspector: true,
+      );
+      _activeUserId = userId;
+    }
   }
 
   Future<void> closeCurrent() async {

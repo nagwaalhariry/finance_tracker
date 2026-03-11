@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/theme/spacing.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../cubit/add_expense_cubit.dart';
 import '../cubit/dashboard_cubit.dart';
 import '../cubit/expense_cubit.dart';
@@ -44,7 +46,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
         },
         builder: (context, state) {
           return Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Form(
               key: _formKey,
               child: ListView(
@@ -54,7 +56,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     decoration: const InputDecoration(labelText: 'Title'),
                     validator: (value) => value == null || value.isEmpty ? 'Enter title' : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _amountController,
                     decoration: const InputDecoration(labelText: 'Amount'),
@@ -63,7 +65,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         ? 'Enter valid amount'
                         : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   DropdownButtonFormField<String>(
                     value: _category,
                     items: AppConstants.defaultCategories
@@ -72,7 +74,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     onChanged: (value) => setState(() => _category = value ?? _category),
                     decoration: const InputDecoration(labelText: 'Category'),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   ListTile(
                     title: const Text('Date'),
                     subtitle: Text(_selectedDate.toIso8601String().split('T').first),
@@ -89,14 +91,14 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       }
                     },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _noteController,
                     decoration: const InputDecoration(labelText: 'Note (optional)'),
                     maxLines: 2,
                   ),
-                  const SizedBox(height: 24),
-                  FilledButton(
+                  const SizedBox(height: AppSpacing.lg),
+                  AppButton(
                     onPressed: state.status == AddExpenseStatus.loading
                         ? null
                         : () {
@@ -111,9 +113,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                       : _noteController.text.trim(),
                                 );
                           },
-                    child: state.status == AddExpenseStatus.loading
-                        ? const CircularProgressIndicator()
-                        : const Text('Save Expense'),
+                    label:
+                        state.status == AddExpenseStatus.loading ? 'Saving...' : 'Save Expense',
+                    icon: Icons.save_outlined,
                   ),
                 ],
               ),

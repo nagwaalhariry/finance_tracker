@@ -1,9 +1,15 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/utils/date_utils.dart';
+import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/empty_state_widget.dart';
 import '../../../auth/presentation/pages/settings_page.dart';
+import '../../../fixed_expenses/presentation/cubit/fixed_expense_cubit.dart';
+import '../../../fixed_expenses/presentation/pages/fixed_expenses_page.dart';
+import '../../../profile/presentation/cubit/user_profile_cubit.dart';
 import '../cubit/dashboard_cubit.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -17,8 +23,18 @@ class DashboardPage extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: () {
+              final profileCubit = context.read<UserProfileCubit>();
+              final dashboardCubit = context.read<DashboardCubit>();
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
+                MaterialPageRoute(
+                  builder: (_) => MultiBlocProvider(
+                    providers: [
+                      BlocProvider.value(value: profileCubit),
+                      BlocProvider.value(value: dashboardCubit),
+                    ],
+                    child: const SettingsPage(),
+                  ),
+                ),
               );
             },
             icon: const Icon(Icons.settings),
@@ -32,42 +48,57 @@ class DashboardPage extends StatelessWidget {
           }
 
           if (state.status == DashboardStatus.error) {
-            return Center(child: Text(state.errorMessage ?? 'Failed to load dashboard'));
+            return Center(
+                child: Text(state.errorMessage ?? 'Failed to load dashboard'));
           }
 
           final categoryEntries = state.categoryBreakdown.entries.toList();
+          final money = NumberFormat.simpleCurrency(name: state.currency);
 
           return RefreshIndicator(
             onRefresh: () => context.read<DashboardCubit>().loadDashboard(),
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Card(
-                  child: ListTile(
-                    title: const Text('Total Spending This Month'),
-                    subtitle: Text(
-                      '\$${state.totalMonthSpending.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Monthly Salary',
+                          style: Theme.of(context).textTheme.labelLarge),
+                      Text(
+                        money.format(state.monthlySalary),
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 12),
+                      Text('Currency: ${state.currency}'),
+                      Text(
+                          'Essential Expenses: ${money.format(state.totalFixedExpenses)}'),
+                      Text(
+                          'Remaining Balance: ${money.format(state.remainingBalance)}'),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                Card(
+                AppCard(
                   child: SizedBox(
                     height: 220,
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.zero,
                       child: LineChart(
                         LineChartData(
                           lineBarsData: [
                             LineChartBarData(
                               isCurved: true,
-                              spots: state.monthlyExpenses.asMap().entries.map((e) {
+                              spots: state.monthlyExpenses
+                                  .asMap()
+                                  .entries
+                                  .map((e) {
                                 return FlSpot(e.key.toDouble(), e.value.amount);
                               }).toList(),
                             )
                           ],
-                          titlesData: FlTitlesData(show: false),
+                          titlesData: const FlTitlesData(show: false),
                           gridData: const FlGridData(show: true),
                         ),
                       ),
@@ -75,7 +106,7 @@ class DashboardPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Card(
+                AppCard(
                   child: SizedBox(
                     height: 240,
                     child: PieChart(
@@ -92,17 +123,46 @@ class DashboardPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text('Recent Expenses', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                ...state.recentExpenses.map(
-                  (expense) => Card(
-                    child: ListTile(
-                      title: Text(expense.title),
-                      subtitle: Text(AppDateUtils.formatDate(expense.date)),
-                      trailing: Text('\$${expense.amount.toStringAsFixed(2)}'),
+                AppCard(
+                  child: ListTile(
+                    title: const Text('Essential Monthly Expenses'),
+                    subtitle: Text(
+                      'Remaining after essentials: ${money.format(state.remainingAfterEssentials)}',
                     ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      final fixedExpenseCubit =
+                          context.read<FixedExpenseCubit>();
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider.value(
+                            value: fixedExpenseCubit,
+                            child: const FixedExpensesPage(),
+                          ),
+                        ),
+                      );
+                      if (context.mounted) {
+                        await context.read<DashboardCubit>().loadDashboard();
+                      }
+                    },
                   ),
                 ),
+                const SizedBox(height: 16),
+                Text('Recent Expenses',
+                    style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                if (state.recentExpenses.isEmpty)
+                  const EmptyStateWidget(title: 'No recent expenses')
+                else
+                  ...state.recentExpenses.map(
+                    (expense) => Card(
+                      child: ListTile(
+                        title: Text(expense.title),
+                        subtitle: Text(AppDateUtils.formatDate(expense.date)),
+                        trailing: Text(money.format(expense.amount)),
+                      ),
+                    ),
+                  ),
               ],
             ),
           );
